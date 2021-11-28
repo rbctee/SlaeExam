@@ -2,9 +2,11 @@
 
 ## About
 
-This repository has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification.
+This repository has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification:
 
-Identifier: `PA-30398`
+<https://www.pentesteracademy.com/course?id=3>
+
+Student ID: PA-30398
 
 ## Status
 
