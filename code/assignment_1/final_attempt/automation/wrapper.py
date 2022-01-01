@@ -59,7 +59,7 @@ def replace_template_values(template_name, tcp_port, output_file_path):
             non_null_byte = tcp_port_hex[:2]
             replace_code = f"mov bh, 0x{non_null_byte}\n    push bx\n    xor ebx, ebx"
     else:
-        replace_code = f"push 0x{tcp_port_hex}"
+        replace_code = f"push WORD 0x{tcp_port_hex}"
     
     template_code = template_code.replace("{{ TEMPLATE_TCP_PORT }}", replace_code, 1)
     
