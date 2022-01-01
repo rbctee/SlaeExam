@@ -41,7 +41,7 @@ _start:
     push ebx
     
     ; TCP port in big endian
-    push 0x5c11
+    {{ TEMPLATE_TCP_PORT }}
 
     ; 0x0002 -> AF_INET
     mov bl, 2
