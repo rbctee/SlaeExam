@@ -1,5 +1,8 @@
 import argparse
 import random
+import struct
+import sys
+import time
 
 # Rotate left: 0b1001 --> 0b0011
 def bitwise_rol(byte: int, rotation: int, max_bits: int) -> int:
@@ -63,7 +66,7 @@ def encode_shellcode(shellcode: bytes) -> bytes:
     #   1.2. ODD index -> Rotate to the Left ROT_ODD times
     # 2. NOT each byte
     # 3. XOR each byte with the Least Significant Byte of the shellcode length
-    #   (shellcode_length_least_byte), which is XOR-ed with ROT_EVEN to avoid null_bytes
+    #  except if the two bytes are equal
     print(f"\n[#] Encoding ...")
 
     for index, byte in enumerate(shellcode):
@@ -109,6 +112,13 @@ def manage_shellcode_encoding(input_file, output_file=None):
     encoded_shellcode = encode_shellcode(shellcode)
 
     print(f"[+] Encoded shellcode (HEX): {encoded_shellcode.hex()}")
+
+    s = ""
+    for x in encoded_shellcode:
+    	s += f"{hex(x)},"
+
+    print("[+] Assembly data: " + s[:-1])
+
     if output_file:
         with open(output_file, 'wb') as f:
             f.write(encoded_shellcode)
@@ -128,7 +138,10 @@ def decode_shellcode(encoded_shellcode: bytes) -> bytes:
         if index % 2 == 0:
             # print(f"[+] EVEN | XOR-ed byte: {hex(encoded_byte)}")
 
-            decoded_byte = encoded_byte ^ shellcode_length_least_byte
+            if encoded_byte != shellcode_length_least_byte:
+            	decoded_byte = encoded_byte ^ shellcode_length_least_byte
+            else:
+            	decoded_byte = encoded_byte
             # print(f"[+] EVEN | Rotated byte: {hex(decoded_byte)}")
 
             decoded_byte = bitwise_not(decoded_byte)
@@ -139,7 +152,10 @@ def decode_shellcode(encoded_shellcode: bytes) -> bytes:
         else:
             # print(f"[+] ODD | XOR-ed byte: {hex(encoded_byte)}")
 
-            decoded_byte = encoded_byte ^ shellcode_length_least_byte
+            if encoded_byte != shellcode_length_least_byte:
+            	decoded_byte = encoded_byte ^ shellcode_length_least_byte
+            else:
+            	decoded_byte = encoded_byte
             # print(f"[+] ODD | NOT-ed byte: {hex(decoded_byte)}")
 
             decoded_byte = bitwise_not(decoded_byte)
