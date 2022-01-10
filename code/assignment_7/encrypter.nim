@@ -1,6 +1,5 @@
 import streams
 import bitops
-import strutils
 
 #
 #    References for the Encryption function:
@@ -242,11 +241,8 @@ proc encrypt_shellcode(shellcode: seq[byte], key: string): seq[uint32] =
     #    Given TEA is a block cipher (e.g. AES CBC mode), it needs use padding
     #        in the case of an input sequence of bytes not divisible by 8
     #
-    echo local_shellcode.len
-    echo local_shellcode.len div 8
+
     let shellcode_padding = 8 - (local_shellcode.len mod 8)
-    echo shellcode_padding
-    
     for x in countup(0, shellcode_padding - 1):
   
         #
@@ -462,10 +458,7 @@ proc main(): void =
     for index, byte_value in decrypted_shellcode_bytes:
         shellcode_empty_array[index] = byte_value
     
-    echo decrypted_shellcode_bytes
-    let shellcode_pointer = cast[ByteAddress](shellcode_empty_array.addr)
-    echo toHex(shellcode_pointer)
-    
+    let shellcode_pointer = cast[ByteAddress](shellcode_empty_array.addr)    
 
     # I don't understand why the the address isn't correct
     # there's an offset of 0x50 bytes between the real address and the one of unsafeAddr
