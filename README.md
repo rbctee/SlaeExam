@@ -20,7 +20,7 @@ Assignment #3 | | :white_large_square:
 Assignment #4 | | :white_large_square:
 Assignment #5 | | :white_large_square:
 Assignment #6 | | :white_large_square:
-Assignment #7 | | :white_large_square:
+Assignment #7 | | :white_check_mark:
 
 ## Author
 
