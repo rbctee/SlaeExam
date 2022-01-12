@@ -153,54 +153,6 @@ proc encode_key(key: string): array[4, uint32] =
 
     return k
 
-#
-#   References for the Decryption function:
-#       - https://it.wikipedia.org/wiki/Tiny_Encryption_Algorithm
-#       - https://link.springer.com/content/pdf/10.1007/3-540-60590-8_29.pdf
-#
-#   As per the reference, the function accepts the following arguments:
-#       - 'v': an array made up of 2 uint32 integers
-#           it contains 8 bytes of encrypted data to decrypt
-#       - 'k': an array made up of 4 uint32 integers, hence a 128-bits key
-#           it's the decryption key
-#
-#   As for how to encode data and key to uint32 integers, it's up to you
-#   In fact, in the original whitepaper I didn't find anything about
-#       this matter
-#
-proc decrypt(v: array[2, uint32], k: array[4, uint32]): array[2, uint32] =
-
-    let
-        #
-        #    According to the whitepaper:
-        #
-        #    > A different multiple of delta is used in each round so that no
-        #    > bit of the multiple will not change frequently. We suspect the
-        #    > algorithm is not very sensitive to the value of delta and we
-        #    > merely need to avoid a bad value.
-        #    > It will be noted that delta turns out to be odd with truncation
-        #    >  or nearest rounding, so no extra precautions are needed to
-        #    > ensure that all the digits of sum change.
-        #
-        delta: uint32 = cast[uint32](0x9e3779b9)
-
-        k0: uint32 = k[0]
-        k1: uint32 = k[1]
-        k2: uint32 = k[2]
-        k3: uint32 = k[3]
-
-    var
-        v0: uint32 = v[0]
-        v1: uint32 = v[1]
-        sum: uint32 = cast[uint32](0xc6ef3720)
-
-    for i in countup(0, 31):
-
-        v1 -= ((v0 shl 4) + k2) xor (v0 + sum) xor ((v0 shr 5) + k3)
-        v0 -= ((v1 shl 4) + k0) xor (v1 + sum) xor ((v1 shr 5) + k1)
-        sum -= delta
-
-    return [v0, v1]
 
 #
 #    The function 'decode' decodes a uint32 integer, converting it into 4 bytes.
@@ -315,78 +267,6 @@ proc encrypt_shellcode(shellcode: seq[byte], key: string): seq[uint32] =
 
     return encrypted_shellcode
 
-#
-#    The function 'decrypt_shellcode' retrieves 8 bytes from the sequence of
-#        encrypted bytes, thus decrypting each pair of 4 bytes.
-#    
-#    Look at the for loop for more information.
-#
-proc decrypt_shellcode(encrypted_shellcode: seq[byte], key: string): seq[byte] =
-
-    let
-        # number of 4-bytes chunks stored inside encrypted_shellcode
-        num_chunks: int = (len(encrypted_shellcode) div 4)
-
-        # array of 4 uint32 integers representing the encryption key
-        encoded_key: array[4, uint32] = encode_key(key)
-
-    var
-        decrypted_shellcode: seq[byte]
-        chunk_pair: array[2, uint32]
-        encrypted_chunks_bytes: array[4, byte]
-
-    #
-    #    Operations perfomed by the for loop:
-    #        1. take a pair of 4 bytes from the input sequence
-    #        2. convert them into a pair of uint32 integers
-    #        3. pass them to the decryption function
-    #        4. convert the pair of decrypted uint32 integer into bytes
-    #        5. append the decrypted bytes to the return sequence
-    #
-    for i in countup(0, num_chunks - 1):
-
-        #
-        #    For each 4 bytes of the encrypted shellcode, we have to encode them
-        #        into an uint32 function, as the function 'decrypt' is based on
-        #        this data type
-        #
-        for j in countup(0, 3):
-            encrypted_chunks_bytes[j] = encrypted_shellcode[i * 4 + j]
-
-        chunk_pair[i mod 2] = encode(encrypted_chunks_bytes)
-
-        #
-        #    If the index is odd, then it means there are two values inside the
-        #        array 'chunk_pair'.
-        #    At this point, we can pass the array to the decrypt function in
-        #        order to decrypt the values.
-        #
-        if i mod 2 == 1:
-            var decrypted_chunks: array[2, uint32] = decrypt(chunk_pair, encoded_key)
-
-            #
-            #    For each uint32 returned by the 'decrypt' function, we need to
-            #        convert them into bytes and append them to
-            #        the sequence 'decrypted_shellcode'
-            #
-            for decrypted_chunk in decrypted_chunks:
-
-                
-                var decrypted_chunk_bytes: array[4, byte] = decode(decrypted_chunk)
-                # echo "[+] Decrypted chunk: ", decrypted_chunk
-                # echo "[+] Decrypted bytes: ", decrypted_chunk_bytes
-
-                #
-                #    Append 4 decrypted bytes at a time to the sequence
-                #
-                decrypted_shellcode.add(decrypted_chunk_bytes)
-
-    # Remove padding from the shellcode
-    while decrypted_shellcode[^1] == 0:
-        discard decrypted_shellcode.pop()
-
-    # Return the sequence of decrypted bytes
-    return decrypted_shellcode
 
 #
 #    Show usage of the program
@@ -476,16 +356,6 @@ proc main(): void =
     echo "[+] Saving encrypted shellcode to file: ", output_file
     writeFile(output_file, encrypted_shellcode_bytes)
 
-    #
-    #    As to confirm whether the code and the encryption/decryption functions
-    #        work properly, I placed an assert statement at the bottom of the
-    #        code, comparing the original sequence of unencrypted bytes, with
-    #        the sequence of decrypted bytes
-    #
-    var decrypted_shellcode_bytes = decrypt_shellcode(encrypted_shellcode_bytes, enc_key)
-    
-    echo "[+] Decrypted shellcode: ", decrypted_shellcode_bytes
-    assert shellcode == decrypted_shellcode_bytes
 
 #
 #    Run the main function only if the program is run by itself, not imported
