@@ -16,9 +16,9 @@ Status of my assignments:
 -|-|-
 Assignment #1 | | :white_check_mark:
 Assignment #2 | | :white_check_mark:
-Assignment #3 | | :white_large_square:
-Assignment #4 | | :white_large_square:
-Assignment #5 | | :white_large_square:
+Assignment #3 | | :white_check_mark:
+Assignment #4 | | :white_check_mark:
+Assignment #5 | | :white_check_mark:
 Assignment #6 | | :white_large_square:
 Assignment #7 | | :white_check_mark:
 
