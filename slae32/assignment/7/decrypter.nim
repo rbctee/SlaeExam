@@ -3,7 +3,6 @@ import bitops
 import parseopt
 import os
 
-
 #
 #    The function 'encode' was written to encode 4 bytes of data into a uint32
 #        integer, as is needed by the function 'encrypt'
