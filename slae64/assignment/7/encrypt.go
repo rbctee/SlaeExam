@@ -10,7 +10,7 @@ import (
 
 const NUMROUNDS uint = 128
 
-func pkcs7_padding(src []byte, blockSize int) []byte {
+func add_pkcs7_padding(src []byte, blockSize int) []byte {
 
     if len(src) % blockSize == 0 {
 
@@ -105,7 +105,7 @@ func main() {
     var sbox [256]byte = calculate_sbox()
 
     fmt.Printf("[+] Adding padding to the shellcode\n")
-    var padded_message = pkcs7_padding(data[:], 8)
+    var padded_message = add_pkcs7_padding(data[:], 8)
     var encrypted_message []byte = make([]byte, len(padded_message))
 
     var chunk [8]byte
