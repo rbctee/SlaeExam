@@ -1,6 +1,8 @@
 import argparse
 import random
 
+XOR_BYTE = 0
+
 # Reference:
 # https://stackoverflow.com/questions/312443/how-do-i-split-a-list-into-equally-sized-chunks
 def chunks(lst, n):
@@ -31,15 +33,17 @@ def encode_chunk(chunk: bytes) -> bytes:
 
 def encode_shellcode(shellcode: bytes) -> bytes:
 
+    global XOR_BYTE
+
     encoded_shellcode = bytearray()
 
-    xor_byte = random.choice(range(1, 256))
-    encoded_shellcode.append(xor_byte)
+    XOR_BYTE = random.choice(range(1, 256))
+    # encoded_shellcode.append(xor_byte)
 
-    print(f"[+] Xoring bytes with the byte {hex(xor_byte)}")
+    print(f"[+] Xoring bytes with the byte {hex(XOR_BYTE)}")
 
     for b in shellcode:
-        encoded_shellcode.append(b ^ xor_byte)
+        encoded_shellcode.append(b ^ XOR_BYTE)
 
     print(f"[+] Size of intermediate encoded shellcode is {len(encoded_shellcode)}")
     if (len(encoded_shellcode) % 7) != 0:
@@ -118,10 +122,8 @@ def decode_shellcode(encoded_shellcode: bytes) -> bytes:
         decoded_chunk = decode_chunk(ec)
         decoded_shellcode.extend(decoded_chunk)
 
-    xor_byte = decoded_shellcode[0]
-
     if decoded_shellcode[-1] == 0:
-        print(f"Removing padding bytes")
+        print(f"[+] Removing padding bytes")
         num = 0
 
         for x in decoded_shellcode[::-1]:
@@ -132,12 +134,14 @@ def decode_shellcode(encoded_shellcode: bytes) -> bytes:
 
         decoded_shellcode = decoded_shellcode[:-num]
 
-    xor_byte = decoded_shellcode[0]
-    print(f"[+] Xoring bytes with the byte {hex(xor_byte)}")
+    print(decoded_shellcode.hex())
 
-    for index, b in enumerate(decoded_shellcode[1:]):
-        decoded_shellcode[index + 1] = b ^ xor_byte
-    decoded_shellcode = decoded_shellcode[1:]
+    print(f"[+] Xoring bytes with the byte {hex(XOR_BYTE)}")
+
+    for index, b in enumerate(decoded_shellcode):
+        decoded_shellcode[index] = b ^ XOR_BYTE
+
+    decoded_shellcode = decoded_shellcode
 
     print(f"[+] Decoded shellcode (HEX): {decoded_shellcode.hex()}")
     print(f"[+] Size of decoded shellcode: {len(decoded_shellcode)} bytes")
@@ -151,6 +155,39 @@ def manage_shellcode_decoding(encoded_shellcode: bytes) -> bytes:
 
     decoded_shellcode = decode_shellcode(encoded_shellcode)
     return decoded_shellcode
+
+def generate_decoder_nasm(shellcode: bytes, input_template_file: str = "decoder_template.txt", output_nasm_file: str = "decoder.nasm"):
+
+    shellcode_length = len(shellcode)
+    assert shellcode_length <= 65535, "[!] Shellcode too big"
+
+    try:
+        with open(input_template_file) as f:
+            template = f.read()
+    except Exception as e:
+        print(e)
+        print(f"[!] Error while reading the decoder template")
+        return
+
+    shellcode_length_instruction = f"add cl, {shellcode_length}"
+
+    if shellcode_length > 256:
+        shellcode_length_instruction = f"mov cx, {shellcode_length}"
+
+    encoded_shellcode = ",".join([hex(eb) for eb in shellcode])
+
+    template = template.replace("{{ SHELLCODE_LENGTH_INSTRUCTION }}", shellcode_length_instruction)
+    template = template.replace("{{ XOR_BYTE }}", hex(XOR_BYTE))
+    template = template.replace("{{ ENCODED_SHELLCODE }}", encoded_shellcode)
+
+    try:
+        with open(output_nasm_file, "w") as f:
+            f.write(template)
+    except Exception as e:
+        print(e)
+        print(f"[!] Error while creating the decoder NASM file")
+        return
+
 
 def main():
 
@@ -170,6 +207,9 @@ def main():
     decoded_shellcode = manage_shellcode_decoding(encoded_shellcode)
     assert decoded_shellcode == shellcode
     print(f"[+] Decoded shellcode is equal to the original shellcode")
+
+    print(f"[+] Generating the decoder program")
+    generate_decoder_nasm(encoded_shellcode)
 
 if __name__ == '__main__':
 

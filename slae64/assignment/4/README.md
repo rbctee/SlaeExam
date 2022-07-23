@@ -3,5 +3,5 @@
 Encoding scheme:
 
 - xor each byte with a specific byte
-- take a group of 3 bytes (or 7)
-- find a byte that added/subtracted to the other bytes doesn't generate null bytes in shellcode
+- take a group of 7 bytes
+- find a byte that XORed to the other 7 bytes doesn't generate NULL bytes in shellcode
