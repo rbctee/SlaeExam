@@ -8,23 +8,34 @@ import (
     "math/bits"
 )
 
-const NUMROUNDS uint = 128
+const NUM_ROUNDS uint = 128
+const PADDING_BLOCK_SIZE int = 8
 
+/*
+References:
+- https://stackoverflow.com/questions/41579325/golang-how-do-i-decrypt-with-des-cbc-and-pkcs7
+*/
 func add_pkcs7_padding(src []byte, blockSize int) []byte {
 
-    if len(src) % blockSize == 0 {
+    var text_length int = len(src)
+
+    if text_length % blockSize == 0 {
 
         var padtext = bytes.Repeat([]byte{byte(0x15)}, blockSize)
         return append(src, padtext...)
 
     } else {
 
-        var padding = blockSize - len(src) % blockSize
+        var padding = blockSize - text_length % blockSize
         var padtext = bytes.Repeat([]byte{byte(padding)}, padding)
         return append(src, padtext...)
     }
 }
 
+/*
+References:
+- https://stackoverflow.com/questions/69066821/rijndael-s-box-in-c
+*/
 func calculate_sbox() [256]byte {
 
     var p byte = 1
@@ -66,11 +77,15 @@ func calculate_sbox() [256]byte {
     return sbox
 }
 
-func encrypt(text [8]byte, key [8]byte, sbox [256]byte) [8]byte {
+/*
+References:
+- https://en.wikipedia.org/wiki/Treyfer
+*/
+func treyfer_encrypt(text [8]byte, key [8]byte, sbox [256]byte) [8]byte {
 
     var t byte = text[0]
 
-    for i := uint(0); i < (8 * NUMROUNDS); i++ {
+    for i := uint(0); i < (8 * NUM_ROUNDS); i++ {
 
         t += key[i % 8]
         t = sbox[t] + text[(i + 1) % 8]
@@ -105,7 +120,7 @@ func main() {
     var sbox [256]byte = calculate_sbox()
 
     fmt.Printf("[+] Adding padding to the shellcode\n")
-    var padded_message = add_pkcs7_padding(data[:], 8)
+    var padded_message = add_pkcs7_padding(data[:], PADDING_BLOCK_SIZE)
     var encrypted_message []byte = make([]byte, len(padded_message))
 
     var chunk [8]byte
@@ -115,7 +130,7 @@ func main() {
         chunk[i % 8] = padded_message[i]
         
         if i % 8 == 7 {
-            chunk = encrypt(chunk, key, sbox)
+            chunk = treyfer_encrypt(chunk, key, sbox)
 
             for j := i - 7; j <= i; j++ {
                 encrypted_message[j] = chunk[j % 8]

