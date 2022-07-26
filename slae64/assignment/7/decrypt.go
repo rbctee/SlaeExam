@@ -165,7 +165,7 @@ func main() {
         return
     }
 
-    var key = [8]byte{65, 65, 65, 65, 65, 65, 65, 65}
+    var key = [8]byte{82, 98, 99, 116, 50, 50, 33, 64}
 
     fmt.Printf("[+] Calculating the S-Box\n")
     var sbox [256]byte = calculate_sbox()
