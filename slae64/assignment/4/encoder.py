@@ -155,7 +155,7 @@ def manage_shellcode_decoding(encoded_shellcode: bytes) -> bytes:
     decoded_shellcode = decode_shellcode(encoded_shellcode)
     return decoded_shellcode
 
-def generate_decoder_nasm(shellcode: bytes, input_template_file: str = "decoder_template.txt", output_nasm_file: str = "decoder.nasm"):
+def generate_decoder_nasm(shellcode: bytes, input_template_file: str, output_nasm_file: str):
 
     shellcode_length = len(shellcode)
     assert shellcode_length <= 65535, "[!] Shellcode too big"
@@ -192,11 +192,15 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input", help="File containing shellcode to encode", required=True)
+    parser.add_argument("-it", "--input-template", help="Template for the NASM decoder", default="decoder_template.txt", required=False)
     parser.add_argument("-o", "--output", help="Store the encoded shellcode in this file", required=False)
+    parser.add_argument("-od", "--output-decoder", help="Output file for the NASM decoder", default="decoder.nasm", required=False)
 
     args = parser.parse_args()
     input_file = args.input
+    input_template = args.input_template
     output_file = args.output
+    output_decoder = args.output_decoder
 
     shellcode = read_shellcode(input_file)
     encoded_shellcode = manage_shellcode_encoding(input_file, output_file)
@@ -208,7 +212,8 @@ def main():
     print(f"[+] Decoded shellcode is equal to the original shellcode")
 
     print(f"[+] Generating the decoder program")
-    generate_decoder_nasm(encoded_shellcode)
+
+    generate_decoder_nasm(encoded_shellcode, input_template_file=input_template, output_nasm_file=output_decoder)
 
 if __name__ == '__main__':
 
