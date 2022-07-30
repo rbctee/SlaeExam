@@ -1,4 +1,4 @@
-; Author: Robert Catalin Raducioiu (rbct)
+; Author: Robert C. Raducioiu (rbct)
 
 global _start
 
