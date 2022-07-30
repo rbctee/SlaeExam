@@ -35,17 +35,17 @@ Status of my assignments:
 
 | Assignment | Link | Status
 -|-|-
-Assignment #1 | [Link]() | :white_check_mark:
-Assignment #2 | [Link]() | :white_check_mark:
-Assignment #3 | [Link]() | :white_check_mark:
-Assignment #4 | [Link]() | :white_check_mark:
-Assignment #5 (Part 1) | [Link]() | :white_check_mark:
-Assignment #5 (Part 2) | [Link]() | :white_check_mark:
-Assignment #5 (Part 3) | [Link]() | :white_check_mark:
-Assignment #6 (Part 1) | [Link]() | :white_check_mark:
-Assignment #6 (Part 2) | [Link]() | :white_check_mark:
-Assignment #6 (Part 3) | [Link]() | :white_check_mark:
-Assignment #7 | [Link]() | :white_check_mark:
+Assignment #1 | [Link](https://www.rbct.it/slae64-assignment-1/) | :white_check_mark:
+Assignment #2 | [Link](https://www.rbct.it/slae64-assignment-2/) | :white_check_mark:
+Assignment #3 | [Link](https://www.rbct.it/slae64-assignment-3/) | :white_check_mark:
+Assignment #4 | [Link](https://www.rbct.it/slae64-assignment-4/) | :white_check_mark:
+Assignment #5 (Part 1) | [Link](https://www.rbct.it/slae64-assignment-5-1/) | :white_check_mark:
+Assignment #5 (Part 2) | [Link](https://www.rbct.it/slae64-assignment-5-2/) | :white_check_mark:
+Assignment #5 (Part 3) | [Link](https://www.rbct.it/slae64-assignment-5-3/) | :white_check_mark:
+Assignment #6 (Part 1) | [Link](https://www.rbct.it/slae64-assignment-6-1/) | :white_check_mark:
+Assignment #6 (Part 2) | [Link](https://www.rbct.it/slae64-assignment-6-2/) | :white_check_mark:
+Assignment #6 (Part 3) | [Link](https://www.rbct.it/slae64-assignment-6-3/) | :white_check_mark:
+Assignment #7 | [Link](https://www.rbct.it/slae64-assignment-7/) | :white_check_mark:
 
 ## Author
 
