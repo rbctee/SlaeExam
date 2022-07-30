@@ -33,8 +33,8 @@ Shellcode:
 LoopDecode:
 
     ; increase registers to step to the next chunk
-    add esi, 8
-    add edx, 7
+    add rsi, 8
+    add rdx, 7
 
 LoopDecodeSkip:
 

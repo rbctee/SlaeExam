@@ -38,7 +38,6 @@ def encode_shellcode(shellcode: bytes) -> bytes:
     encoded_shellcode = bytearray()
 
     XOR_BYTE = random.choice(range(1, 256))
-    # encoded_shellcode.append(xor_byte)
 
     print(f"[+] Xoring bytes with the byte {hex(XOR_BYTE)}")
 
